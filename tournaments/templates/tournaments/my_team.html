@@ -1,0 +1,39 @@
+{% extends 'tournaments/base.html' %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 2rem;">
+    <div style="font-size: 4rem;">🏢</div>
+    <h1>{{ team.name }}</h1>
+</div>
+
+<div class="glass-card">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div>
+            <div style="color: #e94560;">👑 Капитан</div>
+            <p><strong>{{ team.captain.username }}</strong></p>
+        </div>
+        <div>
+            <div style="color: #e94560;">📅 Дата создания</div>
+            <p>{{ team.created_at|date:"d.m.Y" }}</p>
+        </div>
+    </div>
+</div>
+
+<h2 style="margin: 2rem 0 1rem;">🏅 Участвует в турнирах</h2>
+<div class="glass-card">
+    {% if team.tournaments.all %}
+        {% for tournament in team.tournaments.all %}
+        <div class="tournament-card">
+            <div class="tournament-title">
+                <a href="/tournament/{{ tournament.id }}/">{{ tournament.name }}</a>
+            </div>
+            <div class="tournament-meta">
+                <span>Статус: {{ tournament.get_status_display }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="text-align: center;">Команда пока не участвует ни в одном турнире</p>
+    {% endif %}
+</div>
+{% endblock %}

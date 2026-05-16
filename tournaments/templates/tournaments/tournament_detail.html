@@ -1,0 +1,63 @@
+{% extends 'tournaments/base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>{{ tournament.name }}</h1>
+    {% if tournament.status == 'registration' and tournament.current_teams_count < tournament.max_teams %}
+        <a href="/join-tournament/{{ tournament.id }}/" class="btn btn-primary">✅ Зарегистрировать команду</a>
+    {% endif %}
+</div>
+
+<div class="glass-card">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div>
+            <div style="color: #e94560;">📝 Описание</div>
+            <p>{{ tournament.description|default:"Нет описания" }}</p>
+        </div>
+        <div>
+            <div style="color: #e94560;">👥 Участники</div>
+            <p><strong>{{ tournament.current_teams_count }}</strong> / {{ tournament.max_teams }}</p>
+        </div>
+        <div>
+            <div style="color: #e94560;">📅 Создан</div>
+            <p>{{ tournament.created_at|date:"d.m.Y H:i" }}</p>
+        </div>
+        <div>
+            <div style="color: #e94560;">⚡ Статус</div>
+            <p>{{ tournament.get_status_display }}</p>
+        </div>
+    </div>
+</div>
+
+<h2 style="margin: 2rem 0 1rem;">👥 Участники</h2>
+<div class="glass-card">
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        {% for team in tournament.registered_teams.all %}
+        <span style="background: rgba(233, 69, 96, 0.2); padding: 6px 12px; border-radius: 20px;">🏢 {{ team.name }}</span>
+        {% empty %}
+        <p>Пока нет участников</p>
+        {% endfor %}
+    </div>
+</div>
+
+<h2 style="margin: 2rem 0 1rem;">⚔️ Матчи</h2>
+<div class="glass-card">
+    {% if matches %}
+        {% for match in matches %}
+        <div class="tournament-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; text-align: center;">
+                <strong>{{ match.team1.name|default:"TBD" }}</strong>
+            </div>
+            <div style="background: rgba(233, 69, 96, 0.2); padding: 8px 20px; border-radius: 8px; font-weight: 700;">
+                {{ match.team1_score }} : {{ match.team2_score }}
+            </div>
+            <div style="flex: 1; text-align: center;">
+                <strong>{{ match.team2.name|default:"TBD" }}</strong>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="text-align: center;">Матчи ещё не созданы (добавьте их в админке)</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'tournaments/base.html' %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">📋 Все турниры</h1>
+
+<div class="glass-card">
+    <table class="modern-table">
+        <thead>
+            <tr><th>Турнир</th><th>Участники</th><th>Статус</th><th>Дата</th><th></th></tr>
+        </thead>
+        <tbody>
+            {% for tournament in tournaments %}
+            <tr>
+                <td><strong>{{ tournament.name }}</strong></td>
+                <td>{{ tournament.current_teams_count }}/{{ tournament.max_teams }}</td>
+                <td>
+                    {% if tournament.status == 'registration' %}
+                        <span class="status-badge status-registration">Регистрация</span>
+                    {% elif tournament.status == 'in_progress' %}
+                        <span class="status-badge status-progress">В процессе</span>
+                    {% else %}
+                        <span class="status-badge status-finished">Завершён</span>
+                    {% endif %}
+                </td>
+                <td>{{ tournament.created_at|date:"d.m.Y" }}</td>
+                <td><a href="/tournament/{{ tournament.id }}/" class="btn btn-outline" style="padding: 4px 16px;">→</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

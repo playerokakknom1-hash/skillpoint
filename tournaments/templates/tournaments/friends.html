@@ -1,0 +1,67 @@
+{% extends 'tournaments/base.html' %}
+{% block content %}
+
+<h2>👥 Друзья</h2>
+
+<!-- Входящие заявки -->
+<div class="glass-card">
+    <h3>📨 Входящие заявки</h3>
+    {% for req in received_requests %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(156,39,176,0.2);">
+        <span>@{{ req.from_user.username }}</span>
+        <a href="/accept-friend/{{ req.id }}/" class="btn btn-primary" style="padding: 5px 15px;">✓ Принять</a>
+    </div>
+    {% empty %}
+    <p style="color: #888;">Нет входящих заявок</p>
+    {% endfor %}
+</div>
+
+<!-- Мои друзья -->
+<div class="glass-card">
+    <h3>🌟 Мои друзья</h3>
+    {% for friend in friends %}
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(156,39,176,0.2);">
+        <span>@{{ friend.username }}</span>
+        <div>
+            <a href="/add-to-team/{{ friend.id }}/" class="btn btn-outline" style="padding: 5px 15px;">➕ В команду</a>
+            <a href="/remove-friend/{{ friend.id }}/" class="btn btn-secondary" style="padding: 5px 15px;">🗑 Удалить</a>
+        </div>
+    </div>
+    {% empty %}
+    <p style="color: #888;">У вас пока нет друзей. Отправьте заявку кому-нибудь!</p>
+    {% endfor %}
+</div>
+
+<!-- Отправленные заявки -->
+<div class="glass-card">
+    <h3>📤 Отправленные заявки</h3>
+    {% for req in sent_requests %}
+    <div style="padding: 10px 0; border-bottom: 1px solid rgba(156,39,176,0.2);">
+        <span>@{{ req.to_user.username }} — ожидает ответа</span>
+    </div>
+    {% empty %}
+    <p style="color: #888;">Нет отправленных заявок</p>
+    {% endfor %}
+</div>
+
+<!-- Добавить друга -->
+<div class="glass-card">
+    <h3>➕ Добавить друга</h3>
+    <form method="GET" action="/friends/">
+        <input type="text" name="search" placeholder="Поиск пользователя..." class="form-control" style="max-width: 300px; display: inline-block;">
+        <button type="submit" class="btn btn-outline">Найти</button>
+    </form>
+    
+    {% if all_users %}
+    <div style="margin-top: 1rem;">
+        {% for user in all_users %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(156,39,176,0.1);">
+            <span>@{{ user.username }}</span>
+            <a href="/send-friend/{{ user.id }}/" class="btn btn-primary" style="padding: 5px 15px;">➕ Добавить</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

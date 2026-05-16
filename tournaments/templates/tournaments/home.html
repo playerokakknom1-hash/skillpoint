@@ -1,0 +1,50 @@
+{% extends 'tournaments/base.html' %}
+
+{% block content %}
+<div class="hero">
+    <h1>Добро пожаловать в CS2 ARENA</h1>
+    <p style="font-size: 1.2rem; margin-bottom: 2rem;">Участвуй в турнирах, побеждай и получай награды</p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/create-tournament/" class="btn btn-primary">➕ Создать турнир</a>
+        <a href="/tournaments/" class="btn btn-outline">📋 Найти турнир</a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+    <div class="glass-card">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">🏆</div>
+        <h3>Призовые фонды</h3>
+        <p>Участвуй в турнирах с реальными призами</p>
+    </div>
+    <div class="glass-card">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">🛡️</div>
+        <h3>Античит система</h3>
+        <p>Честная игра без читеров</p>
+    </div>
+    <div class="glass-card">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">⚡</div>
+        <h3>Быстрые матчи</h3>
+        <p>Автоматическая система турниров</p>
+    </div>
+</div>
+
+{% if tournaments %}
+<h2 style="margin: 2rem 0 1rem;">🔥 Активные турниры</h2>
+<div class="glass-card">
+    {% for tournament in tournaments %}
+    <div class="tournament-card">
+        <div class="tournament-title">
+            <a href="/tournament/{{ tournament.id }}/">{{ tournament.name }}</a>
+        </div>
+        <p>{{ tournament.description|truncatewords:30 }}</p>
+        <div class="tournament-meta">
+            <span>👥 {{ tournament.current_teams_count }}/{{ tournament.max_teams }} команд</span>
+            <span>📅 {{ tournament.created_at|date:"d.m.Y" }}</span>
+            <span class="status-badge status-registration">Регистрация открыта</span>
+        </div>
+        <a href="/tournament/{{ tournament.id }}/" class="btn btn-outline" style="padding: 6px 20px;">Подробнее →</a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

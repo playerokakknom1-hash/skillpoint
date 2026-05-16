@@ -1,0 +1,31 @@
+{% extends 'tournaments/base.html' %}
+{% block content %}
+
+<h2>👑 Админ-панель SKILLPOINT</h2>
+
+<div class="glass-card">
+    <h3>📋 Все пользователи</h3>
+    <table class="modern-table">
+        <thead>
+            <tr><th>ID</th><th>Username</th><th>Статус</th><th>Staff</th><th>Superuser</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>@{{ u.username }}</td>
+                <td>{% if u.is_active %}✅ Активен{% else %}❌ Заблокирован{% endif %}</td>
+                <td>{% if u.is_staff %}✅{% else %}❌{% endif %}</td>
+                <td>{% if u.is_superuser %}✅{% else %}❌{% endif %}</td>
+                <td>
+                    <a href="/admin-panel/toggle-staff/{{ u.id }}/" class="btn btn-outline" style="padding: 4px 12px;">
+                        {% if u.is_staff %}🔽 Снять staff{% else %}🔼 Сделать staff{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
