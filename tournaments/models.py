@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 
 class Team(models.Model):
     name = models.CharField('Название команды', max_length=100, unique=True)
@@ -40,12 +42,21 @@ class Tournament(models.Model):
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='registration')
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tournaments')
     created_at = models.DateTimeField(auto_now_add=True)
+    registration_deadline = models.DateTimeField('Регистрация до', null=True, blank=True)
     
     def __str__(self):
         return self.name
     
     def current_teams_count(self):
         return self.registered_teams.count()
+    
+    def is_full(self):
+        return self.current_teams_count() >= self.max_teams
+    
+    def is_registration_closed(self):
+        if self.registration_deadline:
+            return timezone.now() > self.registration_deadline
+        return False
 
 class Match(models.Model):
     tournament = models.ForeignKey(Tournament, on_delete=models.CASCADE, related_name='matches')
@@ -55,6 +66,7 @@ class Match(models.Model):
     team2_score = models.IntegerField(default=0)
     winner = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='won_matches', null=True, blank=True)
     round_number = models.IntegerField(default=1)
+    match_order = models.IntegerField(default=0)
     
     def __str__(self):
         return f"{self.team1.name if self.team1 else 'TBD'} vs {self.team2.name if self.team2 else 'TBD'}"

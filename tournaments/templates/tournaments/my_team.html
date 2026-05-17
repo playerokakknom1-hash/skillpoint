@@ -4,19 +4,31 @@
 <div style="text-align: center; margin-bottom: 2rem;">
     <div style="font-size: 4rem;">🏢</div>
     <h1>{{ team.name }}</h1>
+    <p style="color: #ce93d8;">Капитан: @{{ team.captain.username }}</p>
 </div>
 
 <div class="glass-card">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-        <div>
-            <div style="color: #e94560;">👑 Капитан</div>
-            <p><strong>{{ team.captain.username }}</strong></p>
-        </div>
-        <div>
-            <div style="color: #e94560;">📅 Дата создания</div>
-            <p>{{ team.created_at|date:"d.m.Y" }}</p>
-        </div>
-    </div>
+    <h3>👥 Участники команды ({{ team.members.count|add:1 }}/{{ team.team_size|default:5 }})</h3>
+    <ul>
+        <li><strong>👑 {{ team.captain.username }}</strong> (капитан)</li>
+        {% for member in team.members.all %}
+        <li>👤 {{ member.username }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    {% if user == team.captain %}
+        <a href="/disband-team/" class="btn btn-outline" style="background: #c62828; color: white;" 
+           onclick="return confirm('Вы уверены? Команда будет удалена навсегда!')">
+            🗑 Распустить команду
+        </a>
+    {% else %}
+        <a href="/leave-team/" class="btn btn-outline" style="background: #c62828; color: white;"
+           onclick="return confirm('Вы уверены, что хотите покинуть команду?')">
+            🚪 Выйти из команды
+        </a>
+    {% endif %}
 </div>
 
 <h2 style="margin: 2rem 0 1rem;">🏅 Участвует в турнирах</h2>
@@ -29,6 +41,7 @@
             </div>
             <div class="tournament-meta">
                 <span>Статус: {{ tournament.get_status_display }}</span>
+                <span>Формат: {% if tournament.team_size == 1 %}1x1{% elif tournament.team_size == 2 %}2x2{% else %}5x5{% endif %}</span>
             </div>
         </div>
         {% endfor %}

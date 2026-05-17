@@ -1,9 +1,10 @@
 {% extends 'tournaments/base.html' %}
+{% load team_tags %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
     <h1>{{ tournament.name }}</h1>
-    {% if tournament.status == 'registration' and tournament.current_teams_count < tournament.max_teams %}
+    {% if tournament.status == 'registration' and tournament.current_teams_count < tournament.max_teams and not tournament.is_registration_closed %}
         <a href="/join-tournament/{{ tournament.id }}/" class="btn btn-primary">✅ Зарегистрировать команду</a>
     {% endif %}
 </div>
@@ -11,53 +12,125 @@
 <div class="glass-card">
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
         <div>
-            <div style="color: #e94560;">📝 Описание</div>
+            <div style="color: #ce93d8;">📝 Описание</div>
             <p>{{ tournament.description|default:"Нет описания" }}</p>
         </div>
         <div>
-            <div style="color: #e94560;">👥 Участники</div>
+            <div style="color: #ce93d8;">👥 Участники</div>
             <p><strong>{{ tournament.current_teams_count }}</strong> / {{ tournament.max_teams }}</p>
         </div>
         <div>
-            <div style="color: #e94560;">📅 Создан</div>
+            <div style="color: #ce93d8;">🎮 Формат</div>
+            <p>
+                {% if tournament.team_size == 1 %}1x1 (одиночки)
+                {% elif tournament.team_size == 2 %}2x2
+                {% else %}5x5{% endif %}
+            </p>
+        </div>
+        <div>
+            <div style="color: #ce93d8;">📅 Создан</div>
             <p>{{ tournament.created_at|date:"d.m.Y H:i" }}</p>
         </div>
         <div>
-            <div style="color: #e94560;">⚡ Статус</div>
-            <p>{{ tournament.get_status_display }}</p>
+            <div style="color: #ce93d8;">⏰ Регистрация до</div>
+            <p>{{ tournament.registration_deadline|date:"d.m.Y H:i"|default:"Не установлена" }}</p>
+        </div>
+        <div>
+            <div style="color: #ce93d8;">⚡ Статус</div>
+            <p>
+                {% if tournament.status == 'registration' %}
+                    {% if tournament.is_registration_closed %}
+                        🔴 Регистрация закрыта
+                    {% else %}
+                        🟢 {{ tournament.get_status_display }}
+                    {% endif %}
+                {% elif tournament.status == 'in_progress' %}
+                    🟡 {{ tournament.get_status_display }}
+                {% else %}
+                    ⚫ {{ tournament.get_status_display }}
+                {% endif %}
+            </p>
         </div>
     </div>
 </div>
+
+{% if user.is_authenticated and tournament.status == 'registration' %}
+    {% get_user_team user as user_team %}
+    {% if user_team %}
+        <div class="glass-card" style="margin-bottom: 1rem;">
+            <h3>Ваша команда: {{ user_team.name }}</h3>
+            <p>👑 Капитан: {{ user_team.captain.username }}</p>
+            <p>👥 Состав ({{ user_team.members.count|add:1 }}/{{ tournament.team_size }}):</p>
+            <ul>
+                <li>👑 {{ user_team.captain.username }}</li>
+                {% for member in user_team.members.all %}
+                <li>👤 {{ member.username }}</li>
+                {% endfor %}
+            </ul>
+            {% if user_team.members.count|add:1 < tournament.team_size %}
+                <p style="color: #ff9800;">⚠️ Нужно ещё {{ tournament.team_size|add:"-1"|add:-user_team.members.count }} игроков</p>
+            {% else %}
+                <p style="color: #4caf50;">✅ Команда укомплектована!</p>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endif %}
 
 <h2 style="margin: 2rem 0 1rem;">👥 Участники</h2>
 <div class="glass-card">
     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
         {% for team in tournament.registered_teams.all %}
-        <span style="background: rgba(233, 69, 96, 0.2); padding: 6px 12px; border-radius: 20px;">🏢 {{ team.name }}</span>
+        <span style="background: rgba(156, 39, 176, 0.2); padding: 6px 12px; border-radius: 20px;">
+            🏢 {{ team.name }}
+            <small style="color: #ce93d8;">({{ team.members.count|add:1 }} игроков)</small>
+        </span>
         {% empty %}
         <p>Пока нет участников</p>
         {% endfor %}
     </div>
 </div>
 
-<h2 style="margin: 2rem 0 1rem;">⚔️ Матчи</h2>
-<div class="glass-card">
+<h2 style="margin: 2rem 0 1rem;">⚔️ Турнирная сетка</h2>
+
+{% if tournament.status == 'finished' or tournament.status == 'in_progress' %}
     {% if matches %}
-        {% for match in matches %}
-        <div class="tournament-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <div style="flex: 1; text-align: center;">
-                <strong>{{ match.team1.name|default:"TBD" }}</strong>
-            </div>
-            <div style="background: rgba(233, 69, 96, 0.2); padding: 8px 20px; border-radius: 8px; font-weight: 700;">
-                {{ match.team1_score }} : {{ match.team2_score }}
-            </div>
-            <div style="flex: 1; text-align: center;">
-                <strong>{{ match.team2.name|default:"TBD" }}</strong>
-            </div>
+        <div class="glass-card">
+            {% regroup matches by round_number as round_matches %}
+            {% for round in round_matches %}
+                <h3 style="margin: 1rem 0; color: #ce93d8;">Раунд {{ round.grouper }}</h3>
+                <div style="display: grid; gap: 0.5rem;">
+                    {% for match in round.list %}
+                    <div class="tournament-card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; text-align: center;">
+                            <strong>{{ match.team1.name|default:"TBD" }}</strong>
+                        </div>
+                        <div style="background: rgba(156, 39, 176, 0.2); padding: 8px 20px; border-radius: 8px; font-weight: 700; margin: 0 1rem;">
+                            {{ match.team1_score }} : {{ match.team2_score }}
+                        </div>
+                        <div style="flex: 1; text-align: center;">
+                            <strong>{{ match.team2.name|default:"TBD" }}</strong>
+                        </div>
+                        {% if match.winner %}
+                            <div style="margin-left: 1rem; color: #4caf50;">🏆 {{ match.winner.name }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
         </div>
-        {% endfor %}
     {% else %}
-        <p style="text-align: center;">Матчи ещё не созданы (добавьте их в админке)</p>
+        <div class="glass-card">
+            <p style="text-align: center;">Матчи ещё не созданы</p>
+        </div>
     {% endif %}
-</div>
+{% else %}
+    <div class="glass-card">
+        <p style="text-align: center;">📋 Сетка турнира появится после окончания регистрации</p>
+        {% if tournament.current_teams_count >= 2 %}
+            <div style="text-align: center; margin-top: 1rem;">
+                <a href="/generate-bracket/{{ tournament.id }}/" class="btn btn-primary">🔮 Сгенерировать сетку вручную</a>
+            </div>
+        {% endif %}
+    </div>
+{% endif %}
 {% endblock %}

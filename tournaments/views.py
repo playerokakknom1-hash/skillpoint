@@ -4,7 +4,10 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import models
+from django.utils import timezone
 from .models import Team, Tournament, Match, FriendRequest
+import random
+import math
 
 def home(request):
     tournaments = Tournament.objects.filter(status='registration').order_by('-created_at')[:5]
@@ -16,18 +19,14 @@ def tournaments_list(request):
 
 def tournament_detail(request, tournament_id):
     tournament = get_object_or_404(Tournament, id=tournament_id)
-    matches = tournament.matches.all().order_by('round_number')
+    matches = tournament.matches.all().order_by('round_number', 'match_order')
     return render(request, 'tournaments/tournament_detail.html', {
         'tournament': tournament,
         'matches': matches,
     })
 
+@login_required
 def create_tournament(request):
-    # Проверка: только staff или superuser могут создавать турниры
-    if not request.user.is_authenticated:
-        messages.error(request, 'Вы не авторизованы')
-        return redirect('login')
-    
     if not request.user.is_staff and not request.user.is_superuser:
         messages.error(request, 'Только администраторы могут создавать турниры')
         return redirect('home')
@@ -37,6 +36,12 @@ def create_tournament(request):
         description = request.POST.get('description')
         max_teams = request.POST.get('max_teams')
         team_size = request.POST.get('team_size')
+        registration_deadline = request.POST.get('registration_deadline')
+        
+        if registration_deadline:
+            registration_deadline = timezone.datetime.fromisoformat(registration_deadline)
+        else:
+            registration_deadline = None
         
         tournament = Tournament.objects.create(
             name=name,
@@ -44,7 +49,8 @@ def create_tournament(request):
             max_teams=int(max_teams),
             team_size=int(team_size),
             created_by=request.user,
-            status='registration'
+            status='registration',
+            registration_deadline=registration_deadline
         )
         messages.success(request, f'Турнир "{name}" создан!')
         return redirect('tournament_detail', tournament_id=tournament.id)
@@ -78,6 +84,11 @@ def my_team(request):
 def join_tournament(request, tournament_id):
     tournament = get_object_or_404(Tournament, id=tournament_id)
     
+    # Проверка, что регистрация ещё открыта
+    if tournament.is_registration_closed():
+        messages.error(request, 'Регистрация на этот турнир закрыта!')
+        return redirect('tournament_detail', tournament_id=tournament.id)
+    
     try:
         team = Team.objects.get(captain=request.user)
         
@@ -92,6 +103,84 @@ def join_tournament(request, tournament_id):
         messages.error(request, 'Сначала создайте команду!')
         return redirect('create_team')
     
+    return redirect('tournament_detail', tournament_id=tournament.id)
+
+@login_required
+def leave_team(request):
+    try:
+        team = Team.objects.get(captain=request.user)
+        messages.error(request, 'Вы капитан. Чтобы выйти, сначала передайте капитанство или удалите команду')
+    except Team.DoesNotExist:
+        team = request.user.teams.first()
+        if team:
+            team.members.remove(request.user)
+            messages.success(request, f'Вы вышли из команды "{team.name}"')
+        else:
+            messages.error(request, 'Вы не состоите в команде')
+    
+    return redirect('my_team')
+
+@login_required
+def disband_team(request):
+    try:
+        team = Team.objects.get(captain=request.user)
+        team.delete()
+        messages.success(request, 'Команда распущена')
+    except Team.DoesNotExist:
+        messages.error(request, 'У вас нет команды')
+    
+    return redirect('home')
+
+@login_required
+def generate_bracket(request, tournament_id):
+    tournament = get_object_or_404(Tournament, id=tournament_id)
+    
+    if request.user != tournament.created_by and not request.user.is_superuser:
+        messages.error(request, 'Только создатель турнира может генерировать сетку')
+        return redirect('tournament_detail', tournament_id=tournament.id)
+    
+    teams = list(tournament.registered_teams.all())
+    num_teams = len(teams)
+    
+    if num_teams < 2:
+        messages.error(request, 'Недостаточно команд для генерации сетки')
+        return redirect('tournament_detail', tournament_id=tournament.id)
+    
+    tournament.matches.all().delete()
+    
+    random.shuffle(teams)
+    
+    next_power = 2 ** math.ceil(math.log2(num_teams))
+    while len(teams) < next_power:
+        teams.append(None)
+    
+    round_num = 1
+    current_round_teams = teams
+    match_order = 0
+    
+    while len(current_round_teams) >= 2:
+        next_round_teams = []
+        for i in range(0, len(current_round_teams), 2):
+            team1 = current_round_teams[i]
+            team2 = current_round_teams[i+1] if i+1 < len(current_round_teams) else None
+            
+            Match.objects.create(
+                tournament=tournament,
+                team1=team1,
+                team2=team2,
+                round_number=round_num,
+                match_order=match_order
+            )
+            match_order += 1
+            next_round_teams.append(None)
+        
+        current_round_teams = next_round_teams
+        round_num += 1
+    
+    tournament.status = 'in_progress'
+    tournament.save()
+    
+    messages.success(request, 'Турнирная сетка сгенерирована!')
     return redirect('tournament_detail', tournament_id=tournament.id)
 
 def register(request):
@@ -205,31 +294,26 @@ def remove_friend(request, user_id):
     
     return redirect('friends_list')
 
-@login_required
-def admin_panel(request):
-    if not request.user.is_superuser:
-        messages.error(request, 'Доступ только у главного администратора')
-        return redirect('home')
-    
-    users = User.objects.all().order_by('id')
-    return render(request, 'tournaments/admin_panel.html', {'users': users})
+from django.views.decorators.csrf import csrf_exempt
+import json
+import smtplib
+from email.mime.text import MIMEText
 
-@login_required
-def toggle_staff(request, user_id):
-    if not request.user.is_superuser:
-        messages.error(request, 'Доступ только у главного администратора')
-        return redirect('home')
+@csrf_exempt
+def support_api(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email')
+            message = data.get('message')
+            
+            # Отправка на email администратора (настройте под себя)
+            # Пока просто сохраняем в лог
+            with open('/tmp/support_messages.log', 'a') as f:
+                f.write(f"{timezone.now()} | {email} | {message}\n")
+            
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            return JsonResponse({'status': 'error'}, status=500)
     
-    user = get_object_or_404(User, id=user_id)
-    
-    # Нельзя снять staff с самого себя
-    if user == request.user:
-        messages.error(request, 'Вы не можете изменить свой собственный статус')
-        return redirect('admin_panel')
-    
-    user.is_staff = not user.is_staff
-    user.save()
-    
-    status = "назначен staff" if user.is_staff else "снят со staff"
-    messages.success(request, f'Пользователь {user.username} {status}')
-    return redirect('admin_panel')
+    return JsonResponse({'status': 'error'}, status=400)

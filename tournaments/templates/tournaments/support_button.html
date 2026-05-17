@@ -1,0 +1,248 @@
+<!-- Кнопка технической поддержки -->
+<style>
+.support-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.4);
+    transition: all 0.3s ease;
+    z-index: 1000;
+    border: none;
+    text-decoration: none;
+}
+
+.support-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.6);
+}
+
+.support-button svg {
+    width: 32px;
+    height: 32px;
+    fill: white;
+}
+
+.support-modal {
+    display: none;
+    position: fixed;
+    bottom: 100px;
+    right: 30px;
+    width: 320px;
+    background: rgba(20, 20, 35, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid rgba(156, 39, 176, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    z-index: 1001;
+    overflow: hidden;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.support-modal-header {
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    padding: 15px;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.support-modal-header h4 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 8px;
+}
+
+.close-modal:hover {
+    opacity: 0.8;
+}
+
+.support-modal-body {
+    padding: 15px;
+}
+
+.support-modal-body p {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.support-form-group {
+    margin-bottom: 15px;
+}
+
+.support-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 13px;
+    color: #ce93d8;
+}
+
+.support-form-group input,
+.support-form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(10, 10, 15, 0.8);
+    border: 1px solid rgba(156, 39, 176, 0.3);
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+.support-form-group input:focus,
+.support-form-group textarea:focus {
+    outline: none;
+    border-color: #9c27b0;
+}
+
+.support-send-btn {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.support-send-btn:hover {
+    transform: translateY(-2px);
+}
+
+.support-success {
+    background: rgba(46, 125, 50, 0.2);
+    border-left: 4px solid #2e7d32;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    display: none;
+}
+
+.support-error {
+    background: rgba(198, 40, 40, 0.2);
+    border-left: 4px solid #c62828;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    display: none;
+}
+</style>
+
+<div class="support-button" id="supportButton">
+    <svg viewBox="0 0 24 24">
+        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+    </svg>
+</div>
+
+<div class="support-modal" id="supportModal">
+    <div class="support-modal-header">
+        <h4>📧 Техническая поддержка</h4>
+        <button class="close-modal" id="closeModal">&times;</button>
+    </div>
+    <div class="support-modal-body">
+        <div class="support-success" id="supportSuccess">
+            ✅ Сообщение отправлено! Мы ответим вам на почту.
+        </div>
+        <div class="support-error" id="supportError">
+            ❌ Ошибка отправки. Попробуйте позже.
+        </div>
+        <p>Опишите вашу проблему или вопрос, и мы свяжемся с вами в ближайшее время.</p>
+        <form id="supportForm">
+            <div class="support-form-group">
+                <label>Ваш email</label>
+                <input type="email" id="supportEmail" required placeholder="example@mail.ru">
+            </div>
+            <div class="support-form-group">
+                <label>Сообщение</label>
+                <textarea id="supportMessage" rows="4" required placeholder="Опишите вашу проблему..."></textarea>
+            </div>
+            <button type="submit" class="support-send-btn">✉️ Отправить</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const supportButton = document.getElementById('supportButton');
+    const supportModal = document.getElementById('supportModal');
+    const closeModal = document.getElementById('closeModal');
+    const supportForm = document.getElementById('supportForm');
+    const supportSuccess = document.getElementById('supportSuccess');
+    const supportError = document.getElementById('supportError');
+
+    supportButton.addEventListener('click', () => {
+        supportModal.style.display = 'block';
+    });
+
+    closeModal.addEventListener('click', () => {
+        supportModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === supportModal) {
+            supportModal.style.display = 'none';
+        }
+    });
+
+    supportForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('supportEmail').value;
+        const message = document.getElementById('supportMessage').value;
+        
+        supportSuccess.style.display = 'none';
+        supportError.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/support/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+                },
+                body: JSON.stringify({ email, message })
+            });
+            
+            if (response.ok) {
+                supportSuccess.style.display = 'block';
+                document.getElementById('supportEmail').value = '';
+                document.getElementById('supportMessage').value = '';
+                setTimeout(() => {
+                    supportModal.style.display = 'none';
+                    supportSuccess.style.display = 'none';
+                }, 3000);
+            } else {
+                supportError.style.display = 'block';
+            }
+        } catch (error) {
+            supportError.style.display = 'block';
+        }
+    });
+</script>
