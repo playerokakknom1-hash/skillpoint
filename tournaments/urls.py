@@ -26,4 +26,6 @@ urlpatterns = [
     path('leave-team/', views.leave_team, name='leave_team'),
     path('disband-team/', views.disband_team, name='disband_team'),
     path('api/support/', views.support_api, name='support_api'),
+    path('admin-panel/', views.admin_panel, name='admin_panel'),
+    path('admin-panel/toggle-staff/<int:user_id>/', views.toggle_staff, name='toggle_staff'),
 ]

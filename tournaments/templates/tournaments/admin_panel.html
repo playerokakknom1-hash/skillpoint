@@ -1,6 +1,6 @@
 {% extends 'tournaments/base.html' %}
-{% block content %}
 
+{% block content %}
 <h2>👑 Админ-панель SKILLPOINT</h2>
 
 <div class="glass-card">
@@ -18,14 +18,17 @@
                 <td>{% if u.is_staff %}✅{% else %}❌{% endif %}</td>
                 <td>{% if u.is_superuser %}✅{% else %}❌{% endif %}</td>
                 <td>
-                    <a href="/admin-panel/toggle-staff/{{ u.id }}/" class="btn btn-outline" style="padding: 4px 12px;">
-                        {% if u.is_staff %}🔽 Снять staff{% else %}🔼 Сделать staff{% endif %}
-                    </a>
+                    {% if not u.is_superuser %}
+                        <a href="/admin-panel/toggle-staff/{{ u.id }}/" class="btn btn-outline" style="padding: 4px 12px;">
+                            {% if u.is_staff %}🔽 Снять staff{% else %}🔼 Сделать staff{% endif %}
+                        </a>
+                    {% else %}
+                        <span style="color: #ce93d8;">Главный админ</span>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-
 {% endblock %}

@@ -317,3 +317,31 @@ def support_api(request):
             return JsonResponse({'status': 'error'}, status=500)
     
     return JsonResponse({'status': 'error'}, status=400)
+
+@login_required
+def admin_panel(request):
+    if not request.user.is_superuser:
+        messages.error(request, 'Доступ только у главного администратора')
+        return redirect('home')
+    
+    users = User.objects.all().order_by('id')
+    return render(request, 'tournaments/admin_panel.html', {'users': users})
+
+@login_required
+def toggle_staff(request, user_id):
+    if not request.user.is_superuser:
+        messages.error(request, 'Доступ только у главного администратора')
+        return redirect('home')
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    if user == request.user:
+        messages.error(request, 'Вы не можете изменить свой собственный статус')
+        return redirect('admin_panel')
+    
+    user.is_staff = not user.is_staff
+    user.save()
+    
+    status = "назначен staff" if user.is_staff else "снят со staff"
+    messages.success(request, f'Пользователь {user.username} {status}')
+    return redirect('admin_panel')
