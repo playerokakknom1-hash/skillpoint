@@ -6,18 +6,37 @@
 <div class="glass-card">
     <form method="POST">
         {% csrf_token %}
+        
         <div class="form-group">
             <label>Название турнира</label>
             <input type="text" name="name" class="form-control" required placeholder="Введите название">
         </div>
+        
         <div class="form-group">
             <label>Описание</label>
             <textarea name="description" class="form-control" rows="3" placeholder="Опишите ваш турнир..."></textarea>
         </div>
+        
         <div class="form-group">
             <label>Максимум команд (2-64)</label>
             <input type="number" name="max_teams" value="8" min="2" max="64" class="form-control">
         </div>
+        
+        <div class="form-group">
+            <label>Формат турнира</label>
+            <select name="team_size" class="form-control">
+                <option value="1">1x1 (одиночки)</option>
+                <option value="2">2x2</option>
+                <option value="5" selected>5x5</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Дата и время окончания регистрации</label>
+            <input type="datetime-local" name="registration_deadline" class="form-control">
+            <small style="color: #888;">Оставьте пустым, если без ограничений</small>
+        </div>
+        
         <button type="submit" class="btn btn-primary">Создать турнир</button>
     </form>
 </div>
