@@ -75,6 +75,19 @@ body::before {
 
 .nav-links a:hover { color: #ce93d8; }
 
+.nav-link-btn {
+    background: none;
+    border: none;
+    color: #a0a0b0;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+}
+
+.nav-link-btn:hover { color: #ce93d8; }
+
 .container {
     max-width: 1400px;
     margin: 0 auto;
