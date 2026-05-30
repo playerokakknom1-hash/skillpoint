@@ -20,7 +20,7 @@
                 {% if user.is_staff or user.is_superuser %}
                     <a href="/create-tournament/">Создать турнир</a>
                 {% endif %}
-                <a href="/logout/">Выйти ({{ user.username }})</a>
+                <form method="POST" action="/logout/" style="display:inline;">{% csrf_token %}<button type="submit" class="nav-link-btn">Выйти ({{ user.username }})</button></form>
             {% else %}
                 <a href="/login/">Войти</a>
                 <a href="/register/">Регистрация</a>

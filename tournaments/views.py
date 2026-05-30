@@ -4,8 +4,11 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.db import models
+from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 from .models import Team, Tournament, Match, FriendRequest
+import json
 import random
 import math
 
@@ -32,22 +35,45 @@ def create_tournament(request):
         return redirect('home')
     
     if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description')
+        name = request.POST.get('name', '').strip()
+        description = request.POST.get('description', '').strip()
         max_teams = request.POST.get('max_teams')
         team_size = request.POST.get('team_size')
         registration_deadline = request.POST.get('registration_deadline')
-        
-        if registration_deadline:
-            registration_deadline = timezone.datetime.fromisoformat(registration_deadline)
-        else:
-            registration_deadline = None
-        
+
+        if not name:
+            messages.error(request, 'Название турнира обязательно')
+            return render(request, 'tournaments/create_tournament.html')
+
+        try:
+            max_teams = int(max_teams)
+            team_size = int(team_size)
+        except (TypeError, ValueError):
+            messages.error(request, 'Некорректный формат числовых полей')
+            return render(request, 'tournaments/create_tournament.html')
+
+        if max_teams < 2 or max_teams > 64:
+            messages.error(request, 'Количество команд должно быть от 2 до 64')
+            return render(request, 'tournaments/create_tournament.html')
+
+        if team_size not in (1, 2, 5):
+            messages.error(request, 'Некорректный формат турнира')
+            return render(request, 'tournaments/create_tournament.html')
+
+        try:
+            if registration_deadline:
+                registration_deadline = timezone.datetime.fromisoformat(registration_deadline)
+            else:
+                registration_deadline = None
+        except ValueError:
+            messages.error(request, 'Некорректный формат даты')
+            return render(request, 'tournaments/create_tournament.html')
+
         tournament = Tournament.objects.create(
             name=name,
             description=description,
-            max_teams=int(max_teams),
-            team_size=int(team_size),
+            max_teams=max_teams,
+            team_size=team_size,
             created_by=request.user,
             status='registration',
             registration_deadline=registration_deadline
@@ -216,6 +242,7 @@ def user_login(request):
             messages.error(request, 'Неверное имя или пароль')
     return render(request, 'tournaments/login.html')
 
+@require_POST
 def user_logout(request):
     logout(request)
     return redirect('home')
@@ -294,29 +321,23 @@ def remove_friend(request, user_id):
     
     return redirect('friends_list')
 
-from django.views.decorators.csrf import csrf_exempt
-import json
-import smtplib
-from email.mime.text import MIMEText
-
-@csrf_exempt
+@require_POST
 def support_api(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            email = data.get('email')
-            message = data.get('message')
-            
-            # Отправка на email администратора (настройте под себя)
-            # Пока просто сохраняем в лог
-            with open('/tmp/support_messages.log', 'a') as f:
-                f.write(f"{timezone.now()} | {email} | {message}\n")
-            
-            return JsonResponse({'status': 'ok'})
-        except Exception as e:
-            return JsonResponse({'status': 'error'}, status=500)
-    
-    return JsonResponse({'status': 'error'}, status=400)
+    try:
+        data = json.loads(request.body)
+        email = data.get('email', '').strip()
+        msg = data.get('message', '').strip()
+
+        if not email or not msg:
+            return JsonResponse({'status': 'error', 'detail': 'Missing fields'}, status=400)
+
+        import logging
+        logger = logging.getLogger('tournaments.support')
+        logger.info('Support request from %s: %s', email, msg[:500])
+
+        return JsonResponse({'status': 'ok'})
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'status': 'error'}, status=400)
 
 @login_required
 def admin_panel(request):
@@ -328,6 +349,7 @@ def admin_panel(request):
     return render(request, 'tournaments/admin_panel.html', {'users': users})
 
 @login_required
+@require_POST
 def toggle_staff(request, user_id):
     if not request.user.is_superuser:
         messages.error(request, 'Доступ только у главного администратора')

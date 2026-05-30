@@ -15,10 +15,6 @@ urlpatterns = [
     path('friends/', views.friends_list, name='friends_list'),
     path('send-friend/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
     path('accept-friend/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
-    path('add-to-team/<int:user_id>/', views.add_friend_to_team, name='add_friend_to_team'), 
-    path('friends/', views.friends_list, name='friends_list'),
-    path('send-friend/<int:user_id>/', views.send_friend_request, name='send_friend_request'),
-    path('accept-friend/<int:request_id>/', views.accept_friend_request, name='accept_friend_request'),
     path('add-to-team/<int:user_id>/', views.add_friend_to_team, name='add_friend_to_team'),
     path('remove-friend/<int:user_id>/', views.remove_friend, name='remove_friend'),
     path('admin-panel/', views.admin_panel, name='admin_panel'),
@@ -26,6 +22,4 @@ urlpatterns = [
     path('leave-team/', views.leave_team, name='leave_team'),
     path('disband-team/', views.disband_team, name='disband_team'),
     path('api/support/', views.support_api, name='support_api'),
-    path('admin-panel/', views.admin_panel, name='admin_panel'),
-    path('admin-panel/toggle-staff/<int:user_id>/', views.toggle_staff, name='toggle_staff'),
 ]
