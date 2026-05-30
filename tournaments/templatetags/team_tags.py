@@ -11,3 +11,12 @@ def get_user_team(user):
     if team is None:
         team = Team.objects.filter(members=user).select_related('captain').prefetch_related('members').first()
     return team
+
+
+@register.filter
+def subtract(value, arg):
+    """Subtract arg from value."""
+    try:
+        return int(value) - int(arg)
+    except (ValueError, TypeError):
+        return value

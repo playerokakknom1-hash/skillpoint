@@ -67,11 +67,13 @@
                 <li>👤 {{ member.username }}</li>
                 {% endfor %}
             </ul>
-            {% if user_team.members.count|add:1 < tournament.team_size %}
-                <p style="color: #ff9800;">⚠️ Нужно ещё {{ tournament.team_size|add:"-1"|add:-user_team.members.count }} игроков</p>
+            {% with total_in_team=user_team.members.count|add:1 %}
+            {% if total_in_team < tournament.team_size %}
+                <p style="color: #ff9800;">⚠️ Нужно ещё {{ tournament.team_size|subtract:total_in_team }} игроков</p>
             {% else %}
                 <p style="color: #4caf50;">✅ Команда укомплектована!</p>
             {% endif %}
+            {% endwith %}
         </div>
     {% endif %}
 {% endif %}
